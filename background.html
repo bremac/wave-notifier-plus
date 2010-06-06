@@ -37,16 +37,12 @@
     // XXX: Iterate all requested domains (establish from options page).
     // XXX: Smaller font, smaller header.
     const domains = parse(localStorage.domains);
-    for (domain in domains) {
+    for (var domain in domains) {
       waitingDomains += 1;
       OAUTH[domain].sendSignedRequest(
         'http://www-opensocial.googleusercontent.com/api/rpc',
         function(response) {
-          const RESPONSE = JSON.parse(response)
-          if (!RESPONSE || !RESPONSE.data || !RESPONSE.data.searchResults) {
-            alert('Bad response: ' + response);
-          }
-          const RESULTS = RESPONSE.data.searchResults;
+          const RESULTS = JSON.parse(response).data.searchResults;
           domains[domain] = RESULTS.digests.slice(0, 20);
           localStorage.domains = JSON.stringify(domains);
           const UNREAD_COUNT = RESULTS.numResults;
@@ -72,8 +68,20 @@
   }
 
   function authorizeNext(i, keys) {
-    alert(keys[i]);
-    OAUTH[keys[i]].authorize(function() {
+    const backgroundAuth = ChromeExOAuth.initBackgroundPage({
+      request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
+      authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
+      access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
+      host_domain: keys[i],
+      consumer_key: 'anonymous',
+      consumer_secret: 'anonymous',
+      scope: 'http://wave.googleusercontent.com/api/rpc',
+      app_name: 'Google Wave Notifier Plus'
+    });
+
+    OAUTH[keys[i]] = backgroundAuth;
+
+    backgroundAuth.authorize(function() {
       i += 1;
 
       if (i == keys.length) {
@@ -89,7 +97,7 @@
 
   function authorize() {
     var keys = [];
-    for (domain in OAUTH) {
+    for (var domain in parse(localStorage.domains)) {
       keys.push(domain);
     }
     
@@ -110,19 +118,6 @@
   load();
   BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
   const OAUTH = {};
-
-  for (domain in parse(localStorage.domains)) {
-    OAUTH[domain] = ChromeExOAuth.initBackgroundPage({
-      request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
-      authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
-      access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
-      host_domain: domain,
-      consumer_key: 'anonymous',
-      consumer_secret: 'anonymous',
-      scope: 'http://wave.googleusercontent.com/api/rpc',
-      app_name: 'Google Wave Notifier Plus'
-    });
-  }
 
   var id;
   var waitingDomains;

@@ -88,7 +88,7 @@
     const BODY = document.body;
 
     var domains = BACKGROUND.parse(localStorage.domains);
-    for (domain in domains) {
+    for (var domain in domains) {
       // Can these be const?
       var URL = (domain == 'default') ?
                   'https://wave.google.com/wave/' :
