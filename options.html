@@ -86,8 +86,9 @@
     // Set up the basic options for the popup window.
     options.maxDigests.value = localStorage.maxDigests;
     options.participantAnnotated.checked =
-      chrome.extension.getBackgroundPage().
-        parse(localStorage.participantAnnotated);
+      BACKGROUND.parse(localStorage.participantAnnotated);
+    options.dropDigestOnClick = 
+      BACKGROUND.parse(localStorage.dropDigestOnClick);
 
     options.maxDigests.onchange = function() {
       localStorage.maxDigests = this.value;
@@ -96,6 +97,10 @@
     options.participantAnnotated.onchange = function() {
       localStorage.participantAnnotated = this.checked;
     };
+    
+    options.dropDigestOnClick.onchange = function() {
+      localStorage.dropDigestOnClick = this.checked;
+    }
 
     // Find the domain table and template 
     const DOMAINTABLE = document.getElementById('domainsTable').
@@ -137,7 +142,7 @@
       if (name != '') {
         DOMAINS[options.newDomain.value] = {};
         BACKGROUND.updateDomains(DOMAINS, true);
-        addDomain(options.newDomain.value);
+        addDomainToList(options.newDomain.value);
         BACKGROUND.authorize();
         options.newDomain.value = '';
       }
@@ -167,11 +172,11 @@
     // Set up the domains from local storage.
     for (var domain in DOMAINS) {
       if (domain != 'default') {
-        addDomain(domain);
+        addDomainToList(domain);
       } else {
-        DOMAINTABLE.getElementById('googleAccount').
-                    getElementsByClassName('removeDomain').
-                    textContent = 'Disable';
+        document.getElementById('googleAccount').
+                 getElementsByClassName('removeDomain').
+                 textContent = 'Disable';
       }
     }
   };
@@ -198,6 +203,10 @@
     <dd>
       <input type="checkbox" name="participantAnnotated" checked>
       Show wave participants as tooltips
+    </dd>
+    <dd>
+      <input type="checkbox" name="dropDigestOnClick" checked>
+      Remove waves from the unread list when they are clicked on.
     </dd>
     <dt>Google Apps Domains:</dt>
     <dd>

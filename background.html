@@ -152,6 +152,7 @@
   if (!parse(localStorage.initialized)) {
     localStorage.maxDigests = 5;
     localStorage.participantAnnotated = true;
+    localStorage.dropDigestOnClick = true;
     initialize();
     localStorage.initialized = true;
     updateDomains({'default': {}});
