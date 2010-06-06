@@ -10,6 +10,7 @@
  * @param {String} url_request_token The OAuth request token URL.
  * @param {String} url_auth_token The OAuth authorize token URL.
  * @param {String} url_access_token The OAuth access token URL.
+ * @param {String} host_domain The OAuth domain to connect to.
  * @param {String} consumer_key The OAuth consumer key.
  * @param {String} consumer_secret The OAuth consumer secret.
  * @param {String} oauth_scope The OAuth scope parameter.
@@ -18,11 +19,12 @@
  *     "callback_page" {String} If you renamed chrome_ex_oauth.html, the name
  *          this file was renamed to.
  */
-function ChromeExOAuth(url_request_token, url_auth_token, url_access_token,
+function ChromeExOAuth(url_request_token, url_auth_token, url_access_token, host_domain,
                        consumer_key, consumer_secret, oauth_scope, opt_args) {
   this.url_request_token = url_request_token;
   this.url_auth_token = url_auth_token;
   this.url_access_token = url_access_token;
+  this.host_domain = host_domain;
   this.consumer_key = consumer_key;
   this.consumer_secret = consumer_secret;
   this.oauth_scope = oauth_scope;
@@ -93,12 +95,20 @@ ChromeExOAuth.prototype.authorize = function(callback) {
 };
 
 /**
+ * Differentiates OAuth tokens by host and scope.
+ */
+ChromeExOAuth.prototype.getKeySuffix = function () {
+  return encodeURI(this.oauth_scope + this.host_domain);
+};
+
+/**
  * Clears any OAuth tokens stored for this configuration.  Effectively a
  * "logout" of the configured OAuth API.
  */
 ChromeExOAuth.prototype.clearTokens = function() {
-  delete localStorage[this.key_token + encodeURI(this.oauth_scope)];
-  delete localStorage[this.key_token_secret + encodeURI(this.oauth_scope)];
+  var keySuffix = this.getKeySuffix();
+  delete localStorage[this.key_token + keySuffix];
+  delete localStorage[this.key_token_secret + keySuffix];
 };
 
 /**
@@ -229,6 +239,7 @@ ChromeExOAuth.fromConfig = function(oauth_config) {
     oauth_config['request_url'],
     oauth_config['authorize_url'],
     oauth_config['access_url'],
+    oauth_config['host_domain'],
     oauth_config['consumer_key'],
     oauth_config['consumer_secret'],
     oauth_config['scope'],
@@ -379,7 +390,7 @@ ChromeExOAuth.addURLParam = function(url, key, value) {
  * @param {String} token The token to store.
  */
 ChromeExOAuth.prototype.setToken = function(token) {
-  localStorage[this.key_token + encodeURI(this.oauth_scope)] = token;
+  localStorage[this.key_token + this.getKeySuffix()] = token;
 };
 
 /**
@@ -387,7 +398,7 @@ ChromeExOAuth.prototype.setToken = function(token) {
  * @return {String} The stored token.
  */
 ChromeExOAuth.prototype.getToken = function() {
-  return localStorage[this.key_token + encodeURI(this.oauth_scope)];
+  return localStorage[this.key_token + this.getKeySuffix()];
 };
 
 /**
@@ -395,7 +406,7 @@ ChromeExOAuth.prototype.getToken = function() {
  * @param {String} secret The secret to store.
  */
 ChromeExOAuth.prototype.setTokenSecret = function(secret) {
-  localStorage[this.key_token_secret + encodeURI(this.oauth_scope)] = secret;
+  localStorage[this.key_token_secret + this.getKeySuffix()] = secret;
 };
 
 /**
@@ -403,7 +414,7 @@ ChromeExOAuth.prototype.setTokenSecret = function(secret) {
  * @return {String} The stored secret.
  */
 ChromeExOAuth.prototype.getTokenSecret = function() {
-  return localStorage[this.key_token_secret + encodeURI(this.oauth_scope)];
+  return localStorage[this.key_token_secret + this.getKeySuffix()];
 };
 
 /**
@@ -498,6 +509,9 @@ ChromeExOAuth.prototype.onRequestToken = function(callback, xhr) {
       this.setTokenSecret(params['oauth_token_secret']);
       var url = ChromeExOAuth.addURLParam(this.url_auth_token,
                                           "oauth_token", token);
+      if (this.host_domain) {
+        url = ChromeExOAuth.addURLParam(url, "hd", this.host_domain);
+      }
       callback(url);
     } else {
       throw new Error("Fetching request token failed. Status " + xhr.status);
