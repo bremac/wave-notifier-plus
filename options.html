@@ -138,7 +138,32 @@
     addButton.onmouseover = buttonMouseOver;
     addButton.onmouseout = buttonMouseOut;
 
-    for (var domain in DOMAINS) { addDomain(domain); }
+    const googleAccountToggle = document.getElementById('googleAccount').
+                                         getElementsByClassName('removeDomain')[0];
+    googleAccountToggle.onclick = function() {
+      if ('default' in DOMAINS) {
+        delete DOMAINS['default'];
+        localStorage.domains = JSON.stringify(DOMAINS);
+        googleAccountToggle.textContent = 'Enable';
+      } else {
+        DOMAINS['default'] = {};
+        localStorage.domains = JSON.stringify(DOMAINS);
+        googleAccountToggle.textContent = 'Disable';
+      }
+      BACKGROUND.authorize();
+    }
+
+    googleAccountToggle.onmouseover = buttonMouseOver;
+    googleAccountToggle.onmouseout = buttonMouseOut;
+
+    for (var domain in DOMAINS) {
+      if (domain != 'default') { addDomain(domain); }
+      else {
+        DOMAINTABLE.getElementById('googleAccount').
+                    getElementsByClassName('removeDomain').
+                    textContent = 'Disable';
+      }
+    }
   };
   
   const DOMAINS = BACKGROUND.parse(localStorage.domains);
@@ -172,6 +197,8 @@
      <tbody>
       <tr><td class="domainName"><input name="newDomain" type="text" value="" /></td>
           <td><div class="addDomain">Add Domain</div></td></tr>
+      <tr id="googleAccount"><td class="domainName">Google Account</td>
+          <td><div class="removeDomain">Enable</div></td></tr>
      </tbody>
     </table>
     </dd>
