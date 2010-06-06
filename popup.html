@@ -66,9 +66,8 @@
   const TABS = chrome.tabs;
   const BACKGROUND = chrome.extension.getBackgroundPage();
   const OAUTH = BACKGROUND.OAUTH;
-  var template;
-  var digest;
 
+  // Get the prefix for the URL for a given HTML div representing a domain.
   function getWaveDomainURL(element) {
       return (element.id == 'default') ?
                'https://wave.google.com/wave/' :
@@ -77,15 +76,17 @@
 
   onload = function() {
     const BODY = document.body;
-
-    var domains = BACKGROUND.parse(localStorage.domains);
-    for (var domain in domains) {
-      // Can these be const?
-      var DIGESTS = (domains[domain] || []).slice(0, localStorage.maxDigests);
-      var DIGEST_COUNT = DIGESTS.length;
-     
-      domainWrapper = BODY.appendChild(document.getElementById('domain').cloneNode(true));
+    const DOMAINS = BACKGROUND.parse(localStorage.domains);
+    
+    for (var domain in DOMAINS) {
+      const DIGESTS = (DOMAINS[domain] || []).slice(0, localStorage.maxDigests);
+      const DIGEST_COUNT = DIGESTS.length;
+    
+      // Set up the div containing the domain header and waves. 
+      const domainWrapper = BODY.appendChild(document.getElementById('domain').cloneNode(true));
       domainWrapper.id = domain;
+
+      // Set the the domain header (domain name and status.)
       header = domainWrapper.getElementsByClassName('domainHeader')[0];
       header.id = domain;
       header.getElementsByClassName('domainName')[0].textContent = domain;
@@ -95,29 +96,28 @@
       };
     
       for (var i = 0; i < DIGEST_COUNT; i++) {
-        template = domainWrapper.appendChild(document.getElementById('template').cloneNode(true));
-        digest = DIGESTS[i];
-        template.id = digest.waveId; // XXX: Superfluous.
+        const template = domainWrapper.appendChild(document.getElementById('template').cloneNode(true));
+        const digest = DIGESTS[i];
+        template.id = digest.waveId;
 
+        // Set the tooltip text if it was requested.
         if (BACKGROUND.parse(localStorage.participantAnnotated)) {
           template.title = digest.participants.join(', ');
         }
 
+        // Set up the content of the digest element.
         template.getElementsByClassName('title')[0].textContent = digest.title;
         template.getElementsByClassName('snippet')[0].textContent += digest.snippet;
 
+        // Set the handlers for the digest element.
         template.onmouseover = function() { this.className += ' mouseover'; };
-
-        template.onmouseout = function() {
-          this.className = this.className.split(' ', 1);
-        };
-
-        // XXX: Pop the wave from the unread list, and decrement the count.
+        template.onmouseout = function() { this.className = this.className.split(' ', 1); };
         template.onclick = function() {
           TABS.create({url: getWaveDomainURL(this.parentNode) + '#restored:wave:' + this.id});
-          // XXX: Fix the unread count.
-          BACKGROUND.removeWave(this.parentNode.id, this.id);
-          this.parentNode.removeChild(this);
+          if (localStorage.dropDigestOnClick) {
+            BACKGROUND.removeWave(this.parentNode.id, this.id);
+            this.parentNode.removeChild(this);
+          }
         };
       }
     }
