@@ -39,14 +39,16 @@
 
   .snippet { color: #7f7f7f }
 
-  #authorization {
+  .domainName {
+    font-weight: bold;
+    float: left;
+  }
+ 
+  .unreadCount {
     float: right;
-    margin-top: 14px;
-    text-decoration: underline;
-    color: #003ea8
   }
 
-  #template { display: none }
+  #template, #domainHeader { display: none }
 </style>
 <script>
   const TABS = chrome.tabs;
@@ -85,16 +87,16 @@
 
     const BODY = document.body;
 
-    for (domain in localStorage.domains) {
+    var domains = BACKGROUND.parse(localStorage.domains);
+    for (domain in domains) {
       // Can these be const?
       var URL = (domain == 'default') ?
                   'https://wave.google.com/wave/' :
                   'https://wave.google.com/a/' + domain + '/';
-      var DIGESTS = (BACKGROUND.parse(localStorage.domains[domain]) || []).
-                      slice(0, localStorage.maxDigests);
+      var DIGESTS = (domains[domain] || []).slice(0, localStorage.maxDigests);
       var DIGEST_COUNT = DIGESTS.length;
       
-      header = BODY.appendChild(document.getElementById('domainHeader').cloneNode(true);
+      header = BODY.appendChild(document.getElementById('domainHeader').cloneNode(true));
       header.id = domain;
       header.getElementsByClassName('domainName')[0].textContent = domain;
       header.getElementsByClassName('unreadCount')[0].textContent = DIGEST_COUNT;
@@ -129,10 +131,6 @@
     if (BODY.scrollHeight > 600) { BODY.className = 'overflow'; }
   };
 </script>
-<div>
-  <img id="logo" src="logo.png" alt="Google Wave">
-  <div id="authorization"></div>
-</div>
 <div class="header" id="domainHeader">
   <div class="domainName"></div>
   &nbsp;
