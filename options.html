@@ -132,6 +132,7 @@
         localStorage.domains = JSON.stringify(DOMAINS);
         addDomain(options.newDomain.value);
         BACKGROUND.authorize();
+        options.newDomain.value = '';
       }
     };
     addButton.onmouseover = buttonMouseOver;
