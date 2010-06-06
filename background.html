@@ -37,26 +37,29 @@
   // XXX: FIXME NOW!!: Find out why the host domain is being treated as undefined.
   //                   Due to the new location of OAUTH?
   function setRawValue(key, value) {
-    localStorage[key] = value;
+    localStorage.setItem(key, value);
   }
  
   function setValue(key, value) {
-    localStorage[key] = JSON.stringify(value);
+    localStorage.setItem(key, JSON.stringify(value));
   }
 
   function getValue(key) {
-    return JSON.parse(localStorage[key]);
+    var value = localStorage.getItem(key);
+    return value && JSON.parse(value);
   }
 
-  // Set up the STATE proxy for the object.
-  for (var prop in CONFIG) {
+  function defineState(key) { // We need to define a function to capture the key.
     Object.defineProperty(STATE, prop, {
-      get: getValue,
-      set: setValue,
+      get: function() { return getValue(key); },
+      set: function(value) { setValue(key, value); },
       configurable: false,
       enumerable: true,
     });
   }
+
+  // Set up the STATE proxy for the object.
+  for (var prop in CONFIG) { defineState(prop); }
 
   function getKeys(object) {
     var keys = [];
