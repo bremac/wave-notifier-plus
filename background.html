@@ -29,30 +29,37 @@
     BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
   }
 
+  function getKeys(object) {
+    var keys = [];
+    for (var key in object) {
+      keys.push(key);
+    }
+    return keys;
+  }
+  
   function sync() {
     PRETTYLOAD.start(localStorage.unreadCount);
     waitingDigestCount = 0;
-    waitingDomains = 0;
-
-    // XXX: Iterate all requested domains (establish from options page).
-    // XXX: Smaller font, smaller header.
-    const domains = parse(localStorage.domains);
-    for (var domain in domains) {
-      waitingDomains += 1;
-      OAUTH[domain].sendSignedRequest(
+    const domains = parse(localStorage.domains); 
+  
+    var fetchDomain;
+    fetchDomain = function (i, keys) {
+      OAUTH[keys[i]].sendSignedRequest(
         'http://www-opensocial.googleusercontent.com/api/rpc',
         function(response) {
           const RESULTS = JSON.parse(response).data.searchResults;
-          domains[domain] = RESULTS.digests.slice(0, 20);
+          domains[keys[i]] = RESULTS.digests.slice(0, 20);
           localStorage.domains = JSON.stringify(domains);
           const UNREAD_COUNT = RESULTS.numResults;
-          waitingDomains -= 1;
           waitingDigestCount += UNREAD_COUNT;
-          if (waitingDomains == 0) {
+          i += 1;
+          if (i == keys.length) {
             PRETTYLOAD.finish(
               localStorage.unreadCount =
-               waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
+              waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
             );
+          } else {
+            fetchDomain(i, keys);
           }
         },
         {
@@ -65,6 +72,8 @@
         }
       );
     }
+
+    fetchDomain(0, getKeys(domains));
   }
 
   function authorizeNext(i, keys) {
@@ -96,12 +105,7 @@
   }
 
   function authorize() {
-    var keys = [];
-    for (var domain in parse(localStorage.domains)) {
-      keys.push(domain);
-    }
-    
-    authorizeNext(0, keys);
+    authorizeNext(0, getKeys(parse(localStorage.domains)));
   }
 
   const UNKNOWN_COUNT = '?';
