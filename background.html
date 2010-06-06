@@ -42,15 +42,16 @@
     return keys;
   }
 
+  // XXX: Store unread count, and generate title on-the-fly.
+  // XXX: Don't show any text if there is nothing unread (make the icon blue.)
   function removeWave(domainName, id) {
     const domains = parse(localStorage.domains);
     const domain = domains[domainName]
     for (var waveIndex in domain) {
       if (domain[waveIndex].waveId == id) {
-        delete domain[waveIndex]; // XXX: Update the array itself.
+        domain.splice(waveIndex, 1);
         localStorage.domains = JSON.stringify(domains);
         
-        // Update the unread count.
         waitingDigestCount -= 1;
         BROWSER_ACTION.setBadgeText({text: 
           localStorage.unreadCount = waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
