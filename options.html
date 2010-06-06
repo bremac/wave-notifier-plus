@@ -166,8 +166,9 @@
 
     // Set up the domains from local storage.
     for (var domain in DOMAINS) {
-      if (domain != 'default') { addDomain(domain); }
-      else {
+      if (domain != 'default') {
+        addDomain(domain);
+      } else {
         DOMAINTABLE.getElementById('googleAccount').
                     getElementsByClassName('removeDomain').
                     textContent = 'Disable';
