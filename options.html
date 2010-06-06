@@ -114,11 +114,11 @@
       BACKGROUND.authorize();
     };
 
-    // The function called to add a domain to the domains table.
     const TEMPLATE = document.getElementById('template').
                               getElementsByTagName('tbody')[0].
                               getElementsByTagName('tr')[0];
 
+    // The function called to add a domain to the domains table.
     const addDomainToList = function(domain) {
       var newDomain = DOMAINTABLE.appendChild(TEMPLATE.cloneNode(true));
       newDomain.id = domain;
