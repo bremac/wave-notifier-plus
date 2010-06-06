@@ -83,6 +83,7 @@
   const BACKGROUND = chrome.extension.getBackgroundPage();
 
   onload = function() {
+    // Set up the basic options for the popup window.
     options.maxDigests.value = localStorage.maxDigests;
     options.participantAnnotated.checked =
       chrome.extension.getBackgroundPage().
@@ -96,24 +97,29 @@
       localStorage.participantAnnotated = this.checked;
     };
 
-    DOMAINTABLE = document.getElementById('domainsTable').
-                           getElementsByTagName('tbody')[0];
-    TEMPLATE = document.getElementById('template').
-                        getElementsByTagName('tbody')[0].
-                        getElementsByTagName('tr')[0];
+    // Find the domain table and template 
+    const DOMAINTABLE = document.getElementById('domainsTable').
+                                 getElementsByTagName('tbody')[0];
 
-    buttonMouseOver = function() { this.className += ' buttonMouseOver'; }
-    buttonMouseOut  = function() { this.className = this.className.split(' ', 1); }
+    // The mouse over and mouse out handlers for the buttons.
+    const buttonMouseOver = function() { this.className += ' buttonMouseOver'; }
+    const buttonMouseOut  = function() { this.className = this.className.split(' ', 1); }
 
-    removeButtonClick = function() {
+    // The function called when a remove button is clicked.
+    const removeButtonClick = function() {
       var parentTr = this.parentNode.parentNode;
       delete DOMAINS[parentTr.id];
-      localStorage.domains = JSON.stringify(DOMAINS);
+      BACKGROUND.updateDomains(DOMAINS, true);
       parentTr.parentNode.removeChild(parentTr);
       BACKGROUND.authorize();
     };
 
-    function addDomain(domain) {
+    // The function called to add a domain to the domains table.
+    const TEMPLATE = document.getElementById('template').
+                              getElementsByTagName('tbody')[0].
+                              getElementsByTagName('tr')[0];
+
+    const addDomainToList = function(domain) {
       var newDomain = DOMAINTABLE.appendChild(TEMPLATE.cloneNode(true));
       newDomain.id = domain;
       newDomain.getElementsByClassName('domainName')[0].textContent = domain;
@@ -123,39 +129,42 @@
       removeButton.onmouseout = buttonMouseOut;
     }
 
-    var newDomainField = DOMAINTABLE.getElementsByTagName('tr')[0];
-    var addButton = newDomainField.getElementsByClassName('addDomain')[0]
+    // Set up the new domain entry field.
+    const newDomainField = DOMAINTABLE.getElementsByTagName('tr')[0];
+    const addButton = newDomainField.getElementsByClassName('addDomain')[0]
     addButton.onclick = function() {
       var name = options.newDomain.value.trim();
       if (name != '') {
         DOMAINS[options.newDomain.value] = {};
-        localStorage.domains = JSON.stringify(DOMAINS);
+        BACKGROUND.updateDomains(DOMAINS, true);
         addDomain(options.newDomain.value);
         BACKGROUND.authorize();
         options.newDomain.value = '';
       }
     };
+    
     addButton.onmouseover = buttonMouseOver;
     addButton.onmouseout = buttonMouseOut;
 
+    // Set up the toggle for the google accounts button.
     const googleAccountToggle = document.getElementById('googleAccount').
                                          getElementsByClassName('removeDomain')[0];
     googleAccountToggle.onclick = function() {
       if ('default' in DOMAINS) {
         delete DOMAINS['default'];
-        localStorage.domains = JSON.stringify(DOMAINS);
+        BACKGROUND.updateDomains(DOMAINS, true);
         googleAccountToggle.textContent = 'Enable';
       } else {
         DOMAINS['default'] = {};
-        localStorage.domains = JSON.stringify(DOMAINS);
+        BACKGROUND.updateDomains(DOMAINS, true);
         googleAccountToggle.textContent = 'Disable';
       }
-      BACKGROUND.authorize();
-    }
+    };
 
     googleAccountToggle.onmouseover = buttonMouseOver;
     googleAccountToggle.onmouseout = buttonMouseOut;
 
+    // Set up the domains from local storage.
     for (var domain in DOMAINS) {
       if (domain != 'default') { addDomain(domain); }
       else {
@@ -167,8 +176,6 @@
   };
   
   const DOMAINS = BACKGROUND.parse(localStorage.domains);
-  var DOMAINSTABLE;
-  var TEMPLATE;
 </script>
 <h1>
   <img src="64.png" alt="Google Wave">

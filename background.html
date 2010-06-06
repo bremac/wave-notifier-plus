@@ -42,6 +42,11 @@
     return keys;
   }
 
+  function updateDomains(domains, reauthenticate) {
+    localStorage.domains = JSON.stringify(domains);
+    if (reauthenticate) { authorize(); }
+  }
+
   // XXX: Store unread count, and generate title on-the-fly.
   // XXX: Don't show any text if there is nothing unread (make the icon blue.)
   function removeWave(domainName, id) {
@@ -50,7 +55,7 @@
     for (var waveIndex in domain) {
       if (domain[waveIndex].waveId == id) {
         domain.splice(waveIndex, 1);
-        localStorage.domains = JSON.stringify(domains);
+        updateDomains(domains);
         
         waitingDigestCount -= 1;
         BROWSER_ACTION.setBadgeText({text: 
@@ -73,7 +78,7 @@
         function(response) {
           const RESULTS = JSON.parse(response).data.searchResults;
           domains[keys[i]] = RESULTS.digests.slice(0, 20);
-          localStorage.domains = JSON.stringify(domains);
+          updateDomains(domains);
           const UNREAD_COUNT = RESULTS.numResults;
           waitingDigestCount += UNREAD_COUNT;
           i += 1;
@@ -100,37 +105,39 @@
     fetchDomain(0, getKeys(domains));
   }
 
-  function authorizeNext(i, keys) {
-    const backgroundAuth = ChromeExOAuth.initBackgroundPage({
-      request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
-      authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
-      access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
-      host_domain: keys[i],
-      consumer_key: 'anonymous',
-      consumer_secret: 'anonymous',
-      scope: 'http://wave.googleusercontent.com/api/rpc',
-      app_name: 'Google Wave Notifier Plus'
-    });
-
-    OAUTH[keys[i]] = backgroundAuth;
-
-    backgroundAuth.authorize(function() {
-      i += 1;
-
-      if (i == keys.length) {
-        BROWSER_ACTION.setIcon({path: 'authorized.png'});
-        BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
-        sync();
-        if (id != null) { clearInterval(id); }
-        id = setInterval(function() { sync(); }, 60000);
-      } else {
-        authorizeNext(i, keys);
-      }
-    });
-  }
-
   function authorize() {
     deauthorize();
+   
+    var authorizeNext; 
+    authorizeNext = function(i, keys) {
+      const backgroundAuth = ChromeExOAuth.initBackgroundPage({
+        request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
+        authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
+        access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
+        host_domain: keys[i],
+        consumer_key: 'anonymous',
+        consumer_secret: 'anonymous',
+        scope: 'http://wave.googleusercontent.com/api/rpc',
+        app_name: 'Google Wave Notifier Plus'
+      });
+
+      OAUTH[keys[i]] = backgroundAuth;
+
+      backgroundAuth.authorize(function() {
+        i += 1;
+
+        if (i == keys.length) {
+          BROWSER_ACTION.setIcon({path: 'authorized.png'});
+          BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
+          sync();
+          if (id != null) { clearInterval(id); }
+          id = setInterval(function() { sync(); }, 60000);
+        } else {
+          authorizeNext(i, keys);
+        }
+      });
+    }
+
     authorizeNext(0, getKeys(parse(localStorage.domains)));
   }
 
@@ -141,7 +148,7 @@
     localStorage.participantAnnotated = true;
     initialize();
     localStorage.initialized = true;
-    localStorage.domains = JSON.stringify({'default': {}});
+    updateDomains({'default': {}});
   }
 
   const BROWSER_ACTION = chrome.browserAction;
