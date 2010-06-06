@@ -76,14 +76,14 @@
 
   onload = function() {
     const BODY = document.body;
-    const DOMAINS = BACKGROUND.parse(localStorage.domains);
+    var DOMAINS = BACKGROUND.parse(localStorage.domains);
     
     for (var domain in DOMAINS) {
-      const DIGESTS = (DOMAINS[domain] || []).slice(0, localStorage.maxDigests);
-      const DIGEST_COUNT = DIGESTS.length;
+      var DIGESTS = (DOMAINS[domain] || []).slice(0, localStorage.maxDigests);
+      var DIGEST_COUNT = DIGESTS.length;
     
       // Set up the div containing the domain header and waves. 
-      const domainWrapper = BODY.appendChild(document.getElementById('domain').cloneNode(true));
+      var domainWrapper = BODY.appendChild(document.getElementById('domain').cloneNode(true));
       domainWrapper.id = domain;
 
       // Set the the domain header (domain name and status.)
@@ -96,8 +96,8 @@
       };
     
       for (var i = 0; i < DIGEST_COUNT; i++) {
-        const template = domainWrapper.appendChild(document.getElementById('template').cloneNode(true));
-        const digest = DIGESTS[i];
+        var template = domainWrapper.appendChild(document.getElementById('template').cloneNode(true));
+        var digest = DIGESTS[i];
         template.id = digest.waveId;
 
         // Set the tooltip text if it was requested.
