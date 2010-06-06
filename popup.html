@@ -19,19 +19,19 @@
   body {
     width: 400px;
     font: small Arial, sans-serif, sans;
-    color: initial
+    color: initial;
+    font-size: 12px;
   }
 
-  body > div {
+  .digest {
+    font-size: 11px;
     border-bottom: 1px solid #edeff5;
     padding: 3px 6px
   }
 
   .overflow { margin-right: 27px }
 
-  .digest, #logo, #authorization { cursor: pointer }
-
-  .digest { height: 64px }
+  .digest, .domainHeader { cursor: pointer }
 
   .mouseover { background: #f4f6fc }
 
@@ -39,6 +39,18 @@
 
   .snippet { color: #7f7f7f }
 
+  .domainWrapper {
+    margin-bottom: 10px;
+    -webkit-border-radius: 3px;
+    border: 2px solid #5590D2;
+  }
+  
+  .domainHeader {
+    background-color: #5590D2;
+    color: white;
+    padding: 3px;
+  }
+  
   .domainName {
     font-weight: bold;
     float: left;
@@ -48,64 +60,42 @@
     float: right;
   }
 
-  #template, #domainHeader { display: none }
+  #domain, #domainHeader, #template { display: none }
 </style>
 <script>
   const TABS = chrome.tabs;
-//  const URL = 'https://wave.google.com/wave/'; // XXX: Domain-dependent.
   const BACKGROUND = chrome.extension.getBackgroundPage();
   const OAUTH = BACKGROUND.OAUTH;
   var template;
   var digest;
 
+  function getWaveDomainURL(element) {
+      return (element.id == 'default') ?
+               'https://wave.google.com/wave/' :
+               'https://wave.google.com/a/' + element.id + '/';
+  }
+
   onload = function() {
-    /*document.getElementById('logo').onclick = function() {
-      TABS.create({url: URL});
-    };
-
-    const AUTHORIZATION = document.getElementById('authorization');
-    AUTHORIZATION.textContent = 'Sign ';
-
-    if (OAUTH.hasToken()) {
-      AUTHORIZATION.textContent += 'out';
-
-      AUTHORIZATION.onclick = function() {
-        BACKGROUND.clearInterval(BACKGROUND.id);
-        delete localStorage.digests;
-        OAUTH.clearTokens();
-        BACKGROUND.initialize();
-        BACKGROUND.BROWSER_ACTION.setIcon({path: 'unauthorized.png'});
-        BACKGROUND.load();
-        BACKGROUND.PRETTYLOAD.finish(BACKGROUND.UNKNOWN_COUNT);
-        close();
-      };
-    } else {
-      AUTHORIZATION.textContent += 'in';
-
-      AUTHORIZATION.onclick = function() { BACKGROUND.authorize(); };
-    }*/
-
     const BODY = document.body;
 
     var domains = BACKGROUND.parse(localStorage.domains);
     for (var domain in domains) {
       // Can these be const?
-      var URL = (domain == 'default') ?
-                  'https://wave.google.com/wave/' :
-                  'https://wave.google.com/a/' + domain + '/';
       var DIGESTS = (domains[domain] || []).slice(0, localStorage.maxDigests);
       var DIGEST_COUNT = DIGESTS.length;
-      
-      header = BODY.appendChild(document.getElementById('domainHeader').cloneNode(true));
+     
+      domainWrapper = BODY.appendChild(document.getElementById('domain').cloneNode(true));
+      domainWrapper.id = domain;
+      header = domainWrapper.getElementsByClassName('domainHeader')[0];
       header.id = domain;
       header.getElementsByClassName('domainName')[0].textContent = domain;
-      header.getElementsByClassName('unreadCount')[0].textContent = DIGEST_COUNT;
+      header.getElementsByClassName('unreadCount')[0].textContent += DIGEST_COUNT;
       header.onclick = function() {
-        TABS.create({url: URL});
+        TABS.create({url: getWaveDomainURL(this)});
       };
     
       for (var i = 0; i < DIGEST_COUNT; i++) {
-        template = BODY.appendChild(document.getElementById('template').cloneNode(true));
+        template = domainWrapper.appendChild(document.getElementById('template').cloneNode(true));
         digest = DIGESTS[i];
         template.id = digest.waveId; // XXX: Superfluous.
 
@@ -122,8 +112,9 @@
           this.className = this.className.split(' ', 1);
         };
 
+        // XXX: Pop the wave from the unread list, and decrement the count.
         template.onclick = function() {
-          TABS.create({url: URL + '#restored:wave:' + digest.waveId});
+          TABS.create({url: getWaveDomainURL(this.parentNode) + '#restored:wave:' + this.id});
         };
       }
     }
@@ -131,10 +122,12 @@
     if (BODY.scrollHeight > 600) { BODY.className = 'overflow'; }
   };
 </script>
-<div class="header" id="domainHeader">
-  <div class="domainName"></div>
-  &nbsp;
-  <div class="unreadCount"></div>
+<div id="domain" class="domainWrapper">
+  <div class="domainHeader">
+    <div class="domainName"></div>
+    &nbsp;
+    <div class="unreadCount">Unread: </div>
+  </div>
 </div>
 <div class="digest" id="template">
   <span class="title"></span>
