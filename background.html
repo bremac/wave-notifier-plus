@@ -36,20 +36,26 @@
 
     // XXX: Iterate all requested domains (establish from options page).
     // XXX: Smaller font, smaller header.
-    for (domain in localStorage.domains) {
+    const domains = parse(localStorage.domains);
+    for (domain in domains) {
       waitingDomains += 1;
-      OAUTH.sendSignedRequest(
+      OAUTH[domain].sendSignedRequest(
         'http://www-opensocial.googleusercontent.com/api/rpc',
         function(response) {
-          const RESULTS = JSON.parse(response).data.searchResults;
-          localStorage.domains[domain] = JSON.stringify(RESULTS.digests.slice(0, 20));
+          const RESPONSE = JSON.parse(response)
+          if (!RESPONSE || !RESPONSE.data || !RESPONSE.data.searchResults) {
+            alert('Bad response: ' + response);
+          }
+          const RESULTS = RESPONSE.data.searchResults;
+          domains[domain] = RESULTS.digests.slice(0, 20);
+          localStorage.domains = JSON.stringify(domains);
           const UNREAD_COUNT = RESULTS.numResults;
           waitingDomains -= 1;
           waitingDigestCount += UNREAD_COUNT;
           if (waitingDomains == 0) {
             PRETTYLOAD.finish(
               localStorage.unreadCount =
-                UNREAD_COUNT < MAX_UNREAD ? UNREAD_COUNT + '' : MAX_UNREAD - 1 + '+'
+               waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
             );
           }
         },
@@ -59,45 +65,65 @@
           body: JSON.stringify({
             method: 'wave.robot.search',
             params: {query: 'in:inbox is:unread', numResults: MAX_UNREAD}
-          }),
-          parameters: {'hd': domain}
+          })
         }
       );
     }
   }
 
-  function authorize() {
-    OAUTH.authorize(function() {
-      BROWSER_ACTION.setIcon({path: 'authorized.png'});
-      BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
-      sync();
+  function authorizeNext(i, keys) {
+    alert(keys[i]);
+    OAUTH[keys[i]].authorize(function() {
+      i += 1;
 
-      id = setInterval(function() { sync(); }, 60000);
+      if (i == keys.length) {
+        BROWSER_ACTION.setIcon({path: 'authorized.png'});
+        BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
+        sync();
+        id = setInterval(function() { sync(); }, 60000);
+      } else {
+        authorizeNext(i, keys);
+      }
     });
+  }
+
+  function authorize() {
+    var keys = [];
+    for (domain in OAUTH) {
+      keys.push(domain);
+    }
+    
+    authorizeNext(0, keys);
   }
 
   const UNKNOWN_COUNT = '?';
 
   if (!parse(localStorage.initialized)) {
-    localStorage.domains = {'default': {}}
     localStorage.maxDigests = 5;
     localStorage.participantAnnotated = true;
     initialize();
     localStorage.initialized = true;
+    localStorage.domains = JSON.stringify({'default': {}});
   }
 
   const BROWSER_ACTION = chrome.browserAction;
   load();
   BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
-  const OAUTH = ChromeExOAuth.initBackgroundPage({
-    request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
-    authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
-    access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
-    consumer_key: 'anonymous',
-    consumer_secret: 'anonymous',
-    scope: 'http://wave.googleusercontent.com/api/rpc',
-    app_name: 'Google Wave Notifier'
-  });
+  const OAUTH = {};
+
+  for (domain in parse(localStorage.domains)) {
+    OAUTH[domain] = ChromeExOAuth.initBackgroundPage({
+      request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
+      authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
+      access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
+      host_domain: domain,
+      consumer_key: 'anonymous',
+      consumer_secret: 'anonymous',
+      scope: 'http://wave.googleusercontent.com/api/rpc',
+      app_name: 'Google Wave Notifier Plus'
+    });
+  }
+
   var id;
   var waitingDomains;
   var waitingDigestCount;
