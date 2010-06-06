@@ -19,6 +19,12 @@
 <script src="chrome_ex_oauth.js"></script>
 <script src="prettyload.js"></script>
 <script>
+  const UNKNOWN_COUNT = '?';
+  const BROWSER_ACTION = chrome.browserAction;
+  const OAUTH = {};
+  const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
+  const MAX_UNREAD = 100;
+
   function parse(type) {
     return typeof type == 'string' ? JSON.parse(type) : type;
   }
@@ -50,8 +56,8 @@
   // XXX: Store unread count, and generate title on-the-fly.
   // XXX: Don't show any text if there is nothing unread (make the icon blue.)
   function removeWave(domainName, id) {
-    const domains = parse(localStorage.domains);
-    const domain = domains[domainName]
+    var domains = parse(localStorage.domains);
+    var domain = domains[domainName]
     for (var waveIndex in domain) {
       if (domain[waveIndex].waveId == id) {
         domain.splice(waveIndex, 1);
@@ -69,18 +75,20 @@
   function sync() {
     PRETTYLOAD.start(localStorage.unreadCount);
     waitingDigestCount = 0;
-    const domains = parse(localStorage.domains); 
+    var domains = parse(localStorage.domains); 
   
     var fetchDomain;
     fetchDomain = function (i, keys) {
       OAUTH[keys[i]].sendSignedRequest(
         'http://www-opensocial.googleusercontent.com/api/rpc',
         function(response) {
-          const RESULTS = JSON.parse(response).data.searchResults;
+          var RESULTS = JSON.parse(response).data.searchResults;
+          var UNREAD_COUNT = RESULTS.numResults;
+          
           domains[keys[i]] = RESULTS.digests.slice(0, 20);
           updateDomains(domains);
-          const UNREAD_COUNT = RESULTS.numResults;
           waitingDigestCount += UNREAD_COUNT;
+          
           i += 1;
           if (i == keys.length) {
             PRETTYLOAD.finish(
@@ -110,7 +118,7 @@
    
     var authorizeNext; 
     authorizeNext = function(i, keys) {
-      const backgroundAuth = ChromeExOAuth.initBackgroundPage({
+      var backgroundAuth = ChromeExOAuth.initBackgroundPage({
         request_url: 'https://www.google.com/accounts/OAuthGetRequestToken',
         authorize_url: 'https://www.google.com/accounts/OAuthAuthorizeToken',
         access_url: 'https://www.google.com/accounts/OAuthGetAccessToken',
@@ -141,8 +149,6 @@
     authorizeNext(0, getKeys(parse(localStorage.domains)));
   }
 
-  const UNKNOWN_COUNT = '?';
-
   if (!parse(localStorage.initialized)) {
     localStorage.maxDigests = 5;
     localStorage.participantAnnotated = true;
@@ -150,16 +156,11 @@
     localStorage.initialized = true;
     updateDomains({'default': {}});
   }
-
-  const BROWSER_ACTION = chrome.browserAction;
   load();
   BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
-  const OAUTH = {};
 
   var id = null;
   var waitingDomains;
   var waitingDigestCount;
-  const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
-  const MAX_UNREAD = 100;
   authorize();
 </script>
