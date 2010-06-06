@@ -115,6 +115,9 @@
         // XXX: Pop the wave from the unread list, and decrement the count.
         template.onclick = function() {
           TABS.create({url: getWaveDomainURL(this.parentNode) + '#restored:wave:' + this.id});
+          // XXX: Fix the unread count.
+          BACKGROUND.removeWave(this.parentNode.id, this.id);
+          this.parentNode.removeChild(this);
         };
       }
     }

@@ -15,11 +15,12 @@
 
   Brian Kennish <byoogle@google.com>
 -->
-<title>Google Wave Notifier</title>
+<title>Google Wave Notifier Plus</title>
 <style>
   body {
     margin: 10px;
-    font: 84% Arial, sans-serif
+    font: small Arial, sans-serif;
+    font-size: 12px;
   }
 
   h1 { font-size: 156% }
@@ -44,8 +45,43 @@
     margin-top: 13px;
     margin-bottom: 13px
   }
+
+  #template { display: none }
+  #domainsTable { 
+    font-size: 12px;
+    border-collapse: collapse;
+    border-top: 1px solid #aaaaaa;
+    border-bottom: 1px solid #aaaaaa;
+  }
+  
+  tr {
+    border-bottom: 1px solid #aaaaaa;
+  }
+
+  tr:hover {
+    background-color: #ececec;
+  }
+
+  .domainName > input {
+    border: 1px solid #999999;
+  }
+
+  .addDomain, .removeDomain {
+    text-align: center;
+    padding: 3px 7px;
+    background-color: #EBEFF9; /* 9CC2EF*/
+    border: 1px solid #333333;
+    -webkit-border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .buttonMouseOver {
+    background-color: #9CC2EF;
+  }
 </style>
 <script>
+  const BACKGROUND = chrome.extension.getBackgroundPage();
+
   onload = function() {
     options.maxDigests.value = localStorage.maxDigests;
     options.participantAnnotated.checked =
@@ -59,11 +95,58 @@
     options.participantAnnotated.onchange = function() {
       localStorage.participantAnnotated = this.checked;
     };
+
+    DOMAINTABLE = document.getElementById('domainsTable').
+                           getElementsByTagName('tbody')[0];
+    TEMPLATE = document.getElementById('template').
+                        getElementsByTagName('tbody')[0].
+                        getElementsByTagName('tr')[0];
+
+    buttonMouseOver = function() { this.className += ' buttonMouseOver'; }
+    buttonMouseOut  = function() { this.className = this.className.split(' ', 1); }
+
+    removeButtonClick = function() {
+      var parentTr = this.parentNode.parentNode;
+      delete DOMAINS[parentTr.id];
+      localStorage.domains = JSON.stringify(DOMAINS);
+      parentTr.parentNode.removeChild(parentTr);
+      BACKGROUND.authorize();
+    };
+
+    function addDomain(domain) {
+      var newDomain = DOMAINTABLE.appendChild(TEMPLATE.cloneNode(true));
+      newDomain.id = domain;
+      newDomain.getElementsByClassName('domainName')[0].textContent = domain;
+      var removeButton = newDomain.getElementsByClassName('removeDomain')[0];
+      removeButton.onclick = removeButtonClick;
+      removeButton.onmouseover = buttonMouseOver;
+      removeButton.onmouseout = buttonMouseOut;
+    }
+
+    var newDomainField = DOMAINTABLE.getElementsByTagName('tr')[0];
+    var addButton = newDomainField.getElementsByClassName('addDomain')[0]
+    addButton.onclick = function() {
+      var name = options.newDomain.value.trim();
+      if (name != '') {
+        DOMAINS[options.newDomain.value] = {};
+        localStorage.domains = JSON.stringify(DOMAINS);
+        addDomain(options.newDomain.value);
+        BACKGROUND.authorize();
+      }
+    };
+    addButton.onmouseover = buttonMouseOver;
+    addButton.onmouseout = buttonMouseOut;
+
+    for (var domain in DOMAINS) { addDomain(domain); }
   };
+  
+  const DOMAINS = BACKGROUND.parse(localStorage.domains);
+  var DOMAINSTABLE;
+  var TEMPLATE;
 </script>
 <h1>
   <img src="64.png" alt="Google Wave">
-  Google Wave Notifier
+  Google Wave Notifier Plus
 </h1>
 <h2>Options</h2>
 <form id="options">
@@ -82,5 +165,19 @@
       <input type="checkbox" name="participantAnnotated" checked>
       Show wave participants as tooltips
     </dd>
+    <dt>Google Apps Domains:</dt>
+    <dd>
+    <table id="domainsTable">
+     <tbody>
+      <tr><td class="domainName"><input name="newDomain" type="text" value="" /></td>
+          <td><div class="addDomain">Add Domain</div></td></tr>
+     </tbody>
+    </table>
+    </dd>
   </dl>
 </form>
+<table id="template">
+ <tbody>
+  <tr><td class="domainName"></td><td><div class="removeDomain">Remove</div></td></tr>
+ </tbody>
+</table>

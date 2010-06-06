@@ -29,12 +29,35 @@
     BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
   }
 
+  function deauthorize() {
+    localStorage.unreadCount = UNKNOWN_COUNT;
+    BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
+  }
+
   function getKeys(object) {
     var keys = [];
     for (var key in object) {
       keys.push(key);
     }
     return keys;
+  }
+
+  function removeWave(domainName, id) {
+    const domains = parse(localStorage.domains);
+    const domain = domains[domainName]
+    for (var waveIndex in domain) {
+      if (domain[waveIndex].waveId == id) {
+        delete domain[waveIndex]; // XXX: Update the array itself.
+        localStorage.domains = JSON.stringify(domains);
+        
+        // Update the unread count.
+        waitingDigestCount -= 1;
+        BROWSER_ACTION.setBadgeText({text: 
+          localStorage.unreadCount = waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
+        });
+        return;
+      }
+    }
   }
   
   function sync() {
@@ -97,6 +120,7 @@
         BROWSER_ACTION.setIcon({path: 'authorized.png'});
         BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
         sync();
+        if (id != null) { clearInterval(id); }
         id = setInterval(function() { sync(); }, 60000);
       } else {
         authorizeNext(i, keys);
@@ -105,6 +129,7 @@
   }
 
   function authorize() {
+    deauthorize();
     authorizeNext(0, getKeys(parse(localStorage.domains)));
   }
 
@@ -123,7 +148,7 @@
   BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
   const OAUTH = {};
 
-  var id;
+  var id = null;
   var waitingDomains;
   var waitingDigestCount;
   const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
