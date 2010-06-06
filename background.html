@@ -31,27 +31,39 @@
 
   function sync() {
     PRETTYLOAD.start(localStorage.unreadCount);
+    waitingDigestCount = 0;
+    waitingDomains = 0;
 
-    OAUTH.sendSignedRequest(
-      'http://www-opensocial.googleusercontent.com/api/rpc',
-      function(response) {
-        const RESULTS = JSON.parse(response).data.searchResults;
-        localStorage.digests = JSON.stringify(RESULTS.digests.slice(0, 20));
-        const UNREAD_COUNT = RESULTS.numResults;
-        PRETTYLOAD.finish(
-          localStorage.unreadCount =
-            UNREAD_COUNT < MAX_UNREAD ? UNREAD_COUNT + '' : MAX_UNREAD - 1 + '+'
-        );
-      },
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          method: 'wave.robot.search',
-          params: {query: 'in:inbox is:unread', numResults: MAX_UNREAD}
-        })
-      }
-    );
+    // XXX: Iterate all requested domains (establish from options page).
+    // XXX: Smaller font, smaller header.
+    for (domain in localStorage.domains) {
+      waitingDomains += 1;
+      OAUTH.sendSignedRequest(
+        'http://www-opensocial.googleusercontent.com/api/rpc',
+        function(response) {
+          const RESULTS = JSON.parse(response).data.searchResults;
+          localStorage.domains[domain] = JSON.stringify(RESULTS.digests.slice(0, 20));
+          const UNREAD_COUNT = RESULTS.numResults;
+          waitingDomains -= 1;
+          waitingDigestCount += UNREAD_COUNT;
+          if (waitingDomains == 0) {
+            PRETTYLOAD.finish(
+              localStorage.unreadCount =
+                UNREAD_COUNT < MAX_UNREAD ? UNREAD_COUNT + '' : MAX_UNREAD - 1 + '+'
+            );
+          }
+        },
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            method: 'wave.robot.search',
+            params: {query: 'in:inbox is:unread', numResults: MAX_UNREAD}
+          }),
+          parameters: {'hd': domain}
+        }
+      );
+    }
   }
 
   function authorize() {
@@ -67,6 +79,7 @@
   const UNKNOWN_COUNT = '?';
 
   if (!parse(localStorage.initialized)) {
+    localStorage.domains = {'default': {}}
     localStorage.maxDigests = 5;
     localStorage.participantAnnotated = true;
     initialize();
@@ -86,6 +99,8 @@
     app_name: 'Google Wave Notifier'
   });
   var id;
+  var waitingDomains;
+  var waitingDigestCount;
   const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
   const MAX_UNREAD = 100;
   authorize();

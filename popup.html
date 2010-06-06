@@ -18,7 +18,7 @@
 <style>
   body {
     width: 400px;
-    font: small Arial, sans-serif;
+    font: small Arial, sans-serif, sans;
     color: initial
   }
 
@@ -50,18 +50,14 @@
 </style>
 <script>
   const TABS = chrome.tabs;
-  const URL = 'https://wave.google.com/wave/';
+//  const URL = 'https://wave.google.com/wave/'; // XXX: Domain-dependent.
   const BACKGROUND = chrome.extension.getBackgroundPage();
   const OAUTH = BACKGROUND.OAUTH;
-  const DIGESTS =
-    (BACKGROUND.parse(localStorage.digests) || []).
-      slice(0, localStorage.maxDigests);
-  const DIGEST_COUNT = DIGESTS.length;
   var template;
   var digest;
 
   onload = function() {
-    document.getElementById('logo').onclick = function() {
+    /*document.getElementById('logo').onclick = function() {
       TABS.create({url: URL});
     };
 
@@ -85,33 +81,49 @@
       AUTHORIZATION.textContent += 'in';
 
       AUTHORIZATION.onclick = function() { BACKGROUND.authorize(); };
-    }
+    }*/
 
     const BODY = document.body;
 
-    for (var i = 0; i < DIGEST_COUNT; i++) {
-      template =
-        BODY.appendChild(document.getElementById('template').cloneNode(true));
-      digest = DIGESTS[i];
-      template.id = digest.waveId;
+    for (domain in localStorage.domains) {
+      // Can these be const?
+      var URL = (domain == 'default') ?
+                  'https://wave.google.com/wave/' :
+                  'https://wave.google.com/a/' + domain + '/';
+      var DIGESTS = (BACKGROUND.parse(localStorage.domains[domain]) || []).
+                      slice(0, localStorage.maxDigests);
+      var DIGEST_COUNT = DIGESTS.length;
+      
+      header = BODY.appendChild(document.getElementById('domainHeader').cloneNode(true);
+      header.id = domain;
+      header.getElementsByClassName('domainName')[0].textContent = domain;
+      header.getElementsByClassName('unreadCount')[0].textContent = DIGEST_COUNT;
+      header.onclick = function() {
+        TABS.create({url: URL});
+      };
+    
+      for (var i = 0; i < DIGEST_COUNT; i++) {
+        template = BODY.appendChild(document.getElementById('template').cloneNode(true));
+        digest = DIGESTS[i];
+        template.id = digest.waveId; // XXX: Superfluous.
 
-      if (BACKGROUND.parse(localStorage.participantAnnotated)) {
-        template.title = digest.participants.join(', ');
+        if (BACKGROUND.parse(localStorage.participantAnnotated)) {
+          template.title = digest.participants.join(', ');
+        }
+
+        template.getElementsByClassName('title')[0].textContent = digest.title;
+        template.getElementsByClassName('snippet')[0].textContent += digest.snippet;
+
+        template.onmouseover = function() { this.className += ' mouseover'; };
+
+        template.onmouseout = function() {
+          this.className = this.className.split(' ', 1);
+        };
+
+        template.onclick = function() {
+          TABS.create({url: URL + '#restored:wave:' + digest.waveId});
+        };
       }
-
-      template.getElementsByClassName('title')[0].textContent = digest.title;
-      template.getElementsByClassName('snippet')[0].textContent +=
-        digest.snippet;
-
-      template.onmouseover = function() { this.className += ' mouseover'; };
-
-      template.onmouseout = function() {
-        this.className = this.className.split(' ', 1);
-      };
-
-      template.onclick = function() {
-        TABS.create({url: URL + '#restored:wave:' + this.id});
-      };
     }
 
     if (BODY.scrollHeight > 600) { BODY.className = 'overflow'; }
@@ -120,6 +132,11 @@
 <div>
   <img id="logo" src="logo.png" alt="Google Wave">
   <div id="authorization"></div>
+</div>
+<div class="header" id="domainHeader">
+  <div class="domainName"></div>
+  &nbsp;
+  <div class="unreadCount"></div>
 </div>
 <div class="digest" id="template">
   <span class="title"></span>
