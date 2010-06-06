@@ -24,40 +24,66 @@
   const OAUTH = {};
   const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
   const MAX_UNREAD = 100;
+  const STATE = {};
+  const CONFIG = {
+    'maxDigests': 5,
+    'participantAnnotated': true,
+    'dropDigestOnClick': true,
+    'domains': {'default': {}},
+    'unreadCount': null,
+    'initialized': true,
+  };
 
-  function parse(type) {
-    return typeof type == 'string' ? JSON.parse(type) : type;
+  // XXX: FIXME NOW!!: Find out why the host domain is being treated as undefined.
+  //                   Due to the new location of OAUTH?
+  function setRawValue(key, value) {
+    localStorage[key] = value;
+  }
+ 
+  function setValue(key, value) {
+    localStorage[key] = JSON.stringify(value);
   }
 
-  function initialize() { localStorage.unreadCount = UNKNOWN_COUNT; }
+  function getValue(key) {
+    return JSON.parse(localStorage[key]);
+  }
+
+  // Set up the STATE proxy for the object.
+  for (var prop in CONFIG) {
+    Object.defineProperty(STATE, prop, {
+      get: getValue,
+      set: setValue,
+      configurable: false,
+      enumerable: true,
+    });
+  }
+
+  function getKeys(object) {
+    var keys = [];
+    for (var key in object) { keys.push(key); }
+    return keys;
+  }
 
   function load() {
     BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
   }
 
   function deauthorize() {
-    localStorage.unreadCount = UNKNOWN_COUNT;
+    STATE.unreadCount = null;
     BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
   }
-
-  function getKeys(object) {
-    var keys = [];
-    for (var key in object) {
-      keys.push(key);
-    }
-    return keys;
-  }
-
+  
   function updateDomains(domains, reauthenticate) {
-    localStorage.domains = JSON.stringify(domains);
+    STATE.domains = domains;
     if (reauthenticate) { authorize(); }
   }
 
   // XXX: Store unread count, and generate title on-the-fly.
   // XXX: Don't show any text if there is nothing unread (make the icon blue.)
   function removeWave(domainName, id) {
-    var domains = parse(localStorage.domains);
+    var domains = STATE.domains;
     var domain = domains[domainName]
+
     for (var waveIndex in domain) {
       if (domain[waveIndex].waveId == id) {
         domain.splice(waveIndex, 1);
@@ -73,9 +99,10 @@
   }
   
   function sync() {
-    PRETTYLOAD.start(localStorage.unreadCount);
+    var unread = '...'; // XXX: FIXME: SET THIS.
+    PRETTYLOAD.start(unread);
     waitingDigestCount = 0;
-    var domains = parse(localStorage.domains); 
+    var domains = STATE.domains;
   
     var fetchDomain;
     fetchDomain = function (i, keys) {
@@ -92,6 +119,7 @@
           i += 1;
           if (i == keys.length) {
             PRETTYLOAD.finish(
+              // XXX: HANDLE THIS.
               localStorage.unreadCount =
               waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
             );
@@ -146,17 +174,14 @@
       });
     }
 
-    authorizeNext(0, getKeys(parse(localStorage.domains)));
+    authorizeNext(0, getKeys(STATE.domains));
   }
 
-  if (!parse(localStorage.initialized)) {
-    localStorage.maxDigests = 5;
-    localStorage.participantAnnotated = true;
-    localStorage.dropDigestOnClick = true;
-    initialize();
-    localStorage.initialized = true;
-    updateDomains({'default': {}});
+  if (!STATE.initialized) {
+    for (var key in CONFIG) { setValue(key, CONFIG[key]); }
+    STATE.initialized = true;
   }
+
   load();
   BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
 

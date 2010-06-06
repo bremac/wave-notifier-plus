@@ -66,6 +66,7 @@
   const TABS = chrome.tabs;
   const BACKGROUND = chrome.extension.getBackgroundPage();
   const OAUTH = BACKGROUND.OAUTH;
+  const STATE = BACKGROUND.STATE;
 
   // Get the prefix for the URL for a given HTML div representing a domain.
   function getWaveDomainURL(element) {
@@ -76,10 +77,11 @@
 
   onload = function() {
     const BODY = document.body;
-    var DOMAINS = BACKGROUND.parse(localStorage.domains);
+    var DOMAINS = STATE.domains;
     
     for (var domain in DOMAINS) {
-      var DIGESTS = (DOMAINS[domain] || []).slice(0, localStorage.maxDigests);
+      // XXX: COULD this slice ever be executed.
+      var DIGESTS = (DOMAINS[domain] || []).slice(0, STATE.maxDigests);
       var DIGEST_COUNT = DIGESTS.length;
     
       // Set up the div containing the domain header and waves. 
@@ -101,7 +103,7 @@
         template.id = digest.waveId;
 
         // Set the tooltip text if it was requested.
-        if (BACKGROUND.parse(localStorage.participantAnnotated)) {
+        if (STATE.participantAnnotated) {
           template.title = digest.participants.join(', ');
         }
 
@@ -114,7 +116,7 @@
         template.onmouseout = function() { this.className = this.className.split(' ', 1); };
         template.onclick = function() {
           TABS.create({url: getWaveDomainURL(this.parentNode) + '#restored:wave:' + this.id});
-          if (localStorage.dropDigestOnClick) {
+          if (STATE.dropDigestOnClick) {
             BACKGROUND.removeWave(this.parentNode.id, this.id);
             this.parentNode.removeChild(this);
           }

@@ -81,26 +81,25 @@
 </style>
 <script>
   const BACKGROUND = chrome.extension.getBackgroundPage();
+  const STATE = BACKGROUND.STATE;
 
   onload = function() {
     // Set up the basic options for the popup window.
-    options.maxDigests.value = localStorage.maxDigests;
-    options.participantAnnotated.checked =
-      BACKGROUND.parse(localStorage.participantAnnotated);
-    options.dropDigestOnClick = 
-      BACKGROUND.parse(localStorage.dropDigestOnClick);
+    options.maxDigests.value = STATE.maxDigests;
+    options.participantAnnotated.checked = STATE.participantAnnotated;
+    options.dropDigestOnClick = STATE.dropDigestOnClick;
 
     options.maxDigests.onchange = function() {
-      localStorage.maxDigests = this.value;
+      STATE.maxDigests = this.value;
     };
 
     options.participantAnnotated.onchange = function() {
-      localStorage.participantAnnotated = this.checked;
+      BACKGROUND.setRawValue('participantAnnotated', this.checked);
     };
     
     options.dropDigestOnClick.onchange = function() {
-      localStorage.dropDigestOnClick = this.checked;
-    }
+      BACKGROUND.setRawValue('dropDigestOnClick', this.checked);
+    };
 
     // Find the domain table and template 
     const DOMAINTABLE = document.getElementById('domainsTable').
@@ -181,7 +180,7 @@
     }
   };
   
-  const DOMAINS = BACKGROUND.parse(localStorage.domains);
+  const DOMAINS = STATE.domains;
 </script>
 <h1>
   <img src="64.png" alt="Google Wave">
