@@ -37,6 +37,14 @@
 
   .mouseover { background: #f4f6fc }
 
+  .unread {
+    font-weight: bold;
+    color: white;
+    background: #9B0;
+    -webkit-border-radius: 3px;
+    padding: 0px 4px;
+  }
+  
   .title { font-weight: bold }
 
   .snippet { color: #7f7f7f }
@@ -110,6 +118,7 @@
         }
 
         // Set up the content of the digest element.
+        template.getElementsByClassName('unread')[0].textContent = digest.unreadCount;
         template.getElementsByClassName('title')[0].textContent = digest.title;
         template.getElementsByClassName('snippet')[0].textContent += digest.snippet;
 
@@ -137,6 +146,7 @@
   </div>
 </div>
 <div class="digest" id="template">
+  <span class="unread"></span>
   <span class="title"></span>
   <span class="snippet">&ndash; </span>
 </div>
