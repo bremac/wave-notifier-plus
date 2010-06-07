@@ -1,0 +1,11 @@
+Google Wave Notifier Plus
+=========================
+
+This is a chrome extension, derived from the official notifier, but
+extended in under 24 hours of hacking to support multiple domains.
+
+Upcoming goals are to add sound and animation to the notifications,
+along with the development goal of making the oauth library completely
+re-entrant, so that authorization and information retrieval may proceed
+in parallel for multiple domains. (Also, the request frequency and
+number of waves to fetch will be made configuration very shortly.)
