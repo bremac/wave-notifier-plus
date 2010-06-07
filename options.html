@@ -115,7 +115,6 @@
       delete DOMAINS[parentTr.id];
       BACKGROUND.updateDomains(DOMAINS, true);
       parentTr.parentNode.removeChild(parentTr);
-      BACKGROUND.authorize();
     };
 
     const TEMPLATE = document.getElementById('template').
@@ -142,7 +141,6 @@
         DOMAINS[options.newDomain.value] = {};
         BACKGROUND.updateDomains(DOMAINS, true);
         addDomainToList(options.newDomain.value);
-        BACKGROUND.authorize();
         options.newDomain.value = '';
       }
     };
@@ -170,17 +168,12 @@
 
     // Set up the domains from local storage.
     for (var domain in DOMAINS) {
-      if (domain != 'default') {
-        addDomainToList(domain);
-      } else {
-        document.getElementById('googleAccount').
-                 getElementsByClassName('removeDomain').
-                 textContent = 'Disable';
-      }
+      if (domain != 'default') { addDomainToList(domain); }
+      else { googleAccountToggle.textContent = 'Disable'; }
     }
   };
   
-  const DOMAINS = STATE.domains;
+  var DOMAINS = STATE.domains;
 </script>
 <h1>
   <img src="64.png" alt="Google Wave">

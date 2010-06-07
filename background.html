@@ -141,7 +141,8 @@
       );
     }
 
-    fetchDomain(0, getKeys(domains));
+    var keys = getKeys(STATE.domains);
+    if(keys.length > 0) fetchDomain(0, keys);
   }
 
   function authorize() {
@@ -168,8 +169,8 @@
         if (i == keys.length) {
           BROWSER_ACTION.setIcon({path: 'authorized.png'});
           BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
-          sync();
           if (id != null) { clearInterval(id); }
+          sync();
           id = setInterval(function() { sync(); }, 60000);
         } else {
           authorizeNext(i, keys);
@@ -177,7 +178,8 @@
       });
     }
 
-    authorizeNext(0, getKeys(STATE.domains));
+    var keys = getKeys(STATE.domains);
+    if (keys.length > 0) authorizeNext(0, keys);
   }
 
   if (!STATE.initialized) {
