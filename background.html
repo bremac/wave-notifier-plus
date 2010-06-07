@@ -19,12 +19,10 @@
 -->
 <script src="chrome_ex_oauthsimple.js"></script>
 <script src="chrome_ex_oauth.js"></script>
-<script src="prettyload.js"></script>
 <script>
   const UNKNOWN_COUNT = '?';
   const BROWSER_ACTION = chrome.browserAction;
   const OAUTH = {};
-  const PRETTYLOAD = new Prettyload(TRIANGLE_WAVE);
   const MAX_UNREAD = 100;
   const STATE = {};
   const CONFIG = {
@@ -36,8 +34,6 @@
     'initialized': true,
   };
 
-  // XXX: FIXME NOW!!: Find out why the host domain is being treated as undefined.
-  //                   Due to the new location of OAUTH?
   function setRawValue(key, value) {
     localStorage.setItem(key, value);
   }
@@ -69,22 +65,32 @@
     return keys;
   }
 
-  function load() {
+  function showUnauthorized() {
+    BROWSER_ACTION.setIcon({path: 'unauthorized.png'});
     BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
   }
 
-  function deauthorize() {
-    STATE.unreadCount = null;
-    BROWSER_ACTION.setBadgeBackgroundColor({color: [139, 139, 139, 255]});
+  function showUnreadCount() {
+    var count = STATE.unreadCount;
+
+    if (count == null) {
+      BROWSER_ACTION.setBadgeText({text: '?'});
+    } else if (count > 0) {
+      BROWSER_ACTION.setIcon({path: 'unread.png'});
+      BROWSER_ACTION.setBadgeText({text: count + ((count > MAX_UNREAD) ? '+' : '')});
+    } else {
+      BROWSER_ACTION.setIcon({path: 'nounread.png'});
+      BROWSER_ACTION.setBadgeText({text: ''});
+    }
+
+    BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
   }
-  
+
   function updateDomains(domains, reauthenticate) {
     STATE.domains = domains;
     if (reauthenticate) { authorize(); }
   }
 
-  // XXX: Store unread count, and generate title on-the-fly.
-  // XXX: Don't show any text if there is nothing unread (make the icon blue.)
   function removeWave(domainName, id) {
     var domains = STATE.domains;
     var domain = domains[domainName]
@@ -94,18 +100,14 @@
         domain.splice(waveIndex, 1);
         updateDomains(domains);
         
-        waitingDigestCount -= 1;
-        BROWSER_ACTION.setBadgeText({text: 
-          localStorage.unreadCount = waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
-        });
+        STATE.unreadCount -= 1;
+        showUnreadCount();
         return;
       }
     }
   }
   
   function sync() {
-    var unread = '...'; // XXX: FIXME: SET THIS.
-    PRETTYLOAD.start(unread);
     waitingDigestCount = 0;
     var domains = STATE.domains;
   
@@ -123,14 +125,9 @@
           
           i += 1;
           if (i == keys.length) {
-            PRETTYLOAD.finish(
-              // XXX: HANDLE THIS.
-              localStorage.unreadCount =
-              waitingDigestCount < MAX_UNREAD ? waitingDigestCount + '' : MAX_UNREAD - 1 + '+'
-            );
-          } else {
-            fetchDomain(i, keys);
-          }
+            STATE.unreadCount = waitingDigestCount;
+            showUnreadCount();
+          } else { fetchDomain(i, keys); }
         },
         {
           method: 'POST',
@@ -148,7 +145,7 @@
   }
 
   function authorize() {
-    deauthorize();
+    showUnauthorized();
    
     var authorizeNext; 
     authorizeNext = function(i, keys) {
@@ -169,8 +166,7 @@
         i += 1;
 
         if (i == keys.length) {
-          BROWSER_ACTION.setIcon({path: 'authorized.png'});
-          BROWSER_ACTION.setBadgeBackgroundColor({color: [85, 144, 210, 255]});
+          showUnreadCount();
           if (id != null) { clearInterval(id); }
           sync();
           id = setInterval(function() { sync(); }, 60000);
@@ -190,7 +186,8 @@
   }
 
   load();
-  BROWSER_ACTION.setBadgeText({text: UNKNOWN_COUNT});
+  showUnauthorized();
+  showUnreadCount();
 
   var id = null;
   var waitingDomains;
