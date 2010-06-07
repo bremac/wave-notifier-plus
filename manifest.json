@@ -1,7 +1,7 @@
 {
   "name": "Google Wave Notifier Plus",
   "version": "1.0",
-  "description": "Find out when you have new waves and preview them fast.",
+  "description": "Preview updated waves quickly - now with multi-domain support!",
   "icons": {"16": "16.png", "48": "48.png", "128": "128.png"},
   "permissions": [
     "tabs",
