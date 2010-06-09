@@ -61,11 +61,18 @@ ChromeExOAuth.initBackgroundPage = function(oauth_config) {
   window.chromeExOAuthRedirectStarted = false;
   window.chromeExOAuthRequestingAccess = false;
 
-  if (!window.hasUpdateListener) {
+  if (!window.hasUpdateListener) { // Unnecessary with Chrome 6.x
+    // Work around creation being sent as an update in 6.x.
+    var initialURL = {} // Relies on getting created first.
+    chrome.tabs.onCreated.addListener(function(tab) {
+        initialURL[tab.id] = tab.url;
+    });
+    
     var url_match = chrome.extension.getURL(window.chromeExOAuth.callback_page);
     chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
       if (changeInfo.url &&
           changeInfo.url.substr(0, url_match.length) === url_match &&
+          initialURL[tabId] != changeInfo.url &&
           window.chromeExOAuthRequestingAccess == false) {
         chrome.tabs.create({ 'url' : changeInfo.url }, function() {
           chrome.tabs.remove(tabId);
