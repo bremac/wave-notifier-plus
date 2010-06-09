@@ -61,17 +61,20 @@ ChromeExOAuth.initBackgroundPage = function(oauth_config) {
   window.chromeExOAuthRedirectStarted = false;
   window.chromeExOAuthRequestingAccess = false;
 
-  var url_match = chrome.extension.getURL(window.chromeExOAuth.callback_page);
-  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.url &&
-        changeInfo.url.substr(0, url_match.length) === url_match &&
-        window.chromeExOAuthRequestingAccess == false) {
-      chrome.tabs.create({ 'url' : changeInfo.url }, function() {
-        chrome.tabs.remove(tabId);
-      });
-    }
-  });
+  if (!window.hasUpdateListener) {
+    var url_match = chrome.extension.getURL(window.chromeExOAuth.callback_page);
+    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+      if (changeInfo.url &&
+          changeInfo.url.substr(0, url_match.length) === url_match &&
+          window.chromeExOAuthRequestingAccess == false) {
+        chrome.tabs.create({ 'url' : changeInfo.url }, function() {
+          chrome.tabs.remove(tabId);
+        });
+      }
+    });
+  }
 
+  window.hasUpdateListener = true;
   return window.chromeExOAuth;
 };
 
