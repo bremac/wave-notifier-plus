@@ -99,9 +99,12 @@
       domainWrapper.id = domain;
 
       // Set the the domain header (domain name and status.)
+      var domainTitle = domain;
+      if (domainTitle == 'default') { domainTitle = 'Google Account'; }
+      
       header = domainWrapper.getElementsByClassName('domainHeader')[0];
       header.id = domain;
-      header.getElementsByClassName('domainName')[0].textContent = domain;
+      header.getElementsByClassName('domainName')[0].textContent = domainTitle;
       header.getElementsByClassName('unreadCount')[0].textContent += DIGEST_COUNT;
       header.onclick = function() {
         TABS.create({url: getWaveDomainURL(this)});
